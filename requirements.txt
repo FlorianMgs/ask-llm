@@ -4,6 +4,5 @@ langchain-community==0.0.25
 langchain-core==0.1.28
 langchain-openai==0.0.8
 langchain-text-splitters==0.0.1
-langsmith==0.1.14
 python-dotenv==1.0.1
 pillow==10.2.0

@@ -13,14 +13,14 @@ class WikipediaAPI:
         self.title = title
 
     @cached_property
-    def wikipedia_article(self) -> str:
+    def wikipedia_article(self) -> str | None:
         try:
             response = requests.get(
                 f"https://en.wikipedia.org/api/rest_v1/page/summary/{self.title}"
             )
             return response.json()["extract"]
         except:
-            return None
+            return
 
 
 class BlogArticleWriter:

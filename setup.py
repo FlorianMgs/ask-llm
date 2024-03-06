@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="ask-ai",
+    name="ask-llm",
     version="0.1.0",
     packages=find_packages(),
-    url="https://github.com/FlorianMgs/ask-ai",
+    url="https://github.com/FlorianMgs/ask-llm",
     license="MIT",
     author="Florian Magisson",
     author_email="madgic.shrooms@gmail.com",

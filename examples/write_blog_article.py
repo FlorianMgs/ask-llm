@@ -1,6 +1,6 @@
 import requests
 from functools import cached_property
-from askai import ask, BaseAnswer
+from ask_llm import ask, BaseAnswer
 
 
 class BlogArticle(BaseAnswer):

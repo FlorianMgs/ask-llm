@@ -1,4 +1,4 @@
-from askai import ask
+from ask_llm import ask
 
 
 @ask()

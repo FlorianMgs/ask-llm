@@ -1,5 +1,5 @@
-## ask-ai: the easiest way to supercharge your apps with LLM!
-ask-ai is a very simple yet powerful package that can turn anything into a LLM interaction.  
+## ask-llm: the easiest way to supercharge your apps with LLM!
+ask-llm is a very simple yet powerful package that can turn anything into a LLM interaction.  
 You just need to decorate a function with `@ask()`, write a prompt into the docstring, give it a return type, and there you go, you got your LLM interaction.  
 This takes inspiration from the awesome langchain-decorators package.  
 It works out of the box with OpenAI (by setting a `OPENAI_API_KEY` env var), but is compatible with all `BaseChatModel` from Langchain.
@@ -17,19 +17,19 @@ and many more to come...
 
 ### Installation
 Either using `pip` or by cloning this repo. 
-`pip install ask-ai`
+`pip install ask-llm`
 
 Then, import the decorator:
-`from askai import ask`
+`from ask_llm import ask`
 
 To make it work out of the box with OpenAI, define an env var:
 `OPENAI_API_KEY=<your key>`
 
 Now, you are able to use the decorator:
-```
+```python
 import requests
 from functools import cached_property
-from askai import ask, BaseAnswer
+from ask_llm import ask, BaseAnswer
 
 
 class BlogArticle(BaseAnswer):
@@ -110,8 +110,8 @@ Langsmith trace: https://smith.langchain.com/public/0abe7b97-d43e-4c10-9bba-be9f
 
 
 An other example, with an image:
-```
-from askai import ask
+```python
+from ask_llm import ask
 
 
 @ask()
@@ -140,4 +140,4 @@ You can pass numerous arguments to the decorator:
 Possibilities with this are endless. Hope you're gonna like it!  
 More features and examples are coming.  
 Special integration with Django is also coming.  
-Do not hesitate to iterate and contribute to the project! Please submit PRs and issues!
+Do not hesitate to iterate and contribute to the project! Please submit PRs and issues 🙏

@@ -42,7 +42,7 @@ def ask(
         @wraps(func)
         def wrapper(*args, **kwargs) -> Callable:
             context_dict = deepcopy(kwargs)
-            image = context_dict.pop("image", None)
+            image = context_dict.get("image", None)
             return_type = signature(func).return_annotation
             docstring = func.__doc__
             messages = []

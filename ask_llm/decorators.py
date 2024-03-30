@@ -100,10 +100,10 @@ def ask(
                 return prompt
 
             if issubclass(chat_model_class, ChatOpenAI):
-                from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
+                api_key_from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
                 llm_kwargs["openai_api_key"] = (
                     api_key_from_kwargs
-                    or from_llm_kwargs
+                    or api_key_from_llm_kwargs
                     or os.getenv("OPENAI_API_KEY")
                 )
 

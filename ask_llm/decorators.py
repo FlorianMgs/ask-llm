@@ -41,6 +41,7 @@ def ask(
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs) -> Callable:
+            api_key_from_kwargs = kwargs.pop("api_key", None)
             context_dict = deepcopy(kwargs)
             image = context_dict.get("image", None)
             return_type = signature(func).return_annotation
@@ -99,8 +100,12 @@ def ask(
                 return prompt
 
             if issubclass(chat_model_class, ChatOpenAI):
-                if llm_kwargs.get("openai_api_key") is None:
-                    llm_kwargs["openai_api_key"] = os.getenv("OPENAI_API_KEY")
+                from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
+                llm_kwargs["openai_api_key"] = (
+                    api_key_from_kwargs
+                    or from_llm_kwargs
+                    or os.getenv("OPENAI_API_KEY")
+                )
 
             llm = chat_model_class(
                 model_name=model_name,

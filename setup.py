@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ask-llm",
-    version="0.1.13",
+    version="0.1.14",
     packages=find_packages(),
     url="https://github.com/FlorianMgs/ask-llm",
     license="MIT",
@@ -12,11 +12,10 @@ setup(
     install_requires=[
         "Jinja2",
         "pillow",
-        "langchain>=0.1.10",
-        "langchain-community>=0.0.25",
-        "langchain-core>=0.1.28",
-        "langchain-openai>=0.0.8",
-        "langchain-text-splitters>=0.0.1",
+        "langchain>=0.2.9",
+        "langchain-community>=0.2.7",
+        "langchain-core>=0.2.21",
+        "langchain-openai>=0.1.17",
         "python-dotenv>=1.0.1",
     ],
 )

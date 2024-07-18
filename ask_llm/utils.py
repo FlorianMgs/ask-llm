@@ -2,12 +2,69 @@ import re
 
 from contextlib import suppress
 from inspect import getfullargspec
+from textwrap import dedent
 from typing import Any, Callable, Iterable
 
 from jinja2 import Environment, BaseLoader
 from langchain.output_parsers import PydanticOutputParser
+from langchain.schema import SystemMessage, HumanMessage, AIMessage
 
-from .schemas import BaseAnswer
+from .schemas import BaseModel
+
+
+def preprocess_template(template_str):
+    # Remove custom tags {% chat %} and {% endchat %}
+    template_str = re.sub(r'{%\s*chat\s*%}', '', template_str)
+    template_str = re.sub(r'{%\s*endchat\s*%}', '', template_str)
+    # Replace {% message 'role' %} and {% endmessage %} with placeholders
+    template_str = re.sub(r'{%\s*message\s*(\w+)\s*%}', r'<!-- message \1 -->', template_str)
+    template_str = re.sub(r'{%\s*endmessage\s*%}', r'<!-- endmessage -->', template_str)
+    return template_str
+
+
+def render_chat_messages(context_dict: dict, raw_template: str) -> list:
+    environment = Environment(loader=BaseLoader())
+    preprocessed_template = preprocess_template(raw_template)
+    template = environment.from_string(preprocessed_template)
+    rendered_template = dedent(template.render(**context_dict))
+
+    messages = []
+
+    # Parse the text outside chat tags and add it as a HumanMessage
+    outside_chat_pattern = re.compile(r'(.*?)<!-- message', re.DOTALL)
+    outside_chat_match = outside_chat_pattern.match(rendered_template)
+    if outside_chat_match:
+        outside_text = outside_chat_match.group(1).strip()
+        if outside_text:
+            messages.append(HumanMessage(content=[{"type": "text", "text": outside_text}]))
+
+    # Parse the rendered template to construct the list of message objects
+    message_pattern = re.compile(r'<!-- message (\w+) -->\s*(.*?)\s*<!-- endmessage -->', re.DOTALL)
+    role_map = {
+        'system': 'SystemMessage',
+        'ai': 'AIMessage',
+        'human': 'HumanMessage',
+    }
+
+    for match in message_pattern.finditer(rendered_template):
+        role, content = match.groups()
+        message_class = role_map.get(role, 'UnknownMessage')
+        content = content.strip()
+        if message_class == 'SystemMessage':
+            messages.append(SystemMessage(content=[{"type": "text", "text": content}]))
+        elif message_class == 'AIMessage':
+            messages.append(AIMessage(content=[{"type": "text", "text": content}]))
+        elif message_class == 'HumanMessage':
+            messages.append(HumanMessage(content=[{"type": "text", "text": content}]))
+        else:
+            raise ValueError(f"Unknown role: {role}")
+
+    # Add remaining text outside chat tags as a HumanMessage
+    remaining_text = message_pattern.split(rendered_template)[-1].strip()
+    if remaining_text:
+        messages.append(HumanMessage(content=[{"type": "text", "text": remaining_text}]))
+
+    return messages
 
 
 def format_attributes(
@@ -72,7 +129,7 @@ def format_return_type_instructions(schema: Any, raw_template: str) -> str:
     """
     Returns the format instructions of a Pydantic schema.
     """
-    if schema and issubclass(schema, BaseAnswer):
+    if schema and issubclass(schema, BaseModel):
         raw_template += "\n\n" + output_parser(schema).get_format_instructions()
     return raw_template
 
@@ -87,7 +144,7 @@ def get_nested_attr(obj: Any, attr: str) -> Any:
     return obj
 
 
-def output_parser(schema: BaseAnswer) -> PydanticOutputParser:
+def output_parser(schema: BaseModel) -> PydanticOutputParser:
     """
     Converts a Pydantic scheme to a LCEL compatible output parser.
     Can be used to either get format instructions in a prompt or to parse the llm output.
@@ -105,10 +162,3 @@ def clean_docstring(docstring: str) -> str:
     return docstring
 
 
-def render_template(context_dict: dict, raw_template: str) -> str:
-    """
-    Render the raw template with Jinja
-    """
-    environment = Environment(loader=BaseLoader())
-    template = environment.from_string(raw_template)
-    return template.render(**context_dict)

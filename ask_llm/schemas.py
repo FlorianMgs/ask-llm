@@ -1,9 +1,9 @@
 import json
 from typing import Any, Generator
-from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.pydantic_v1 import BaseModel as BasePydanticModel
 
 
-class BaseAnswer(BaseModel):
+class BaseModel(BasePydanticModel):
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key, None)
 

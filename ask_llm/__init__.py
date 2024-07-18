@@ -1,2 +1,2 @@
 from .decorators import ask
-from .schemas import BaseAnswer
+from .schemas import BaseModel

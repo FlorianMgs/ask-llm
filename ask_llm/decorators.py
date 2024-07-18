@@ -14,7 +14,7 @@ from langchain.schema import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
 from .images import convert_image_to_base64
-from .schemas import BaseAnswer
+from .schemas import BaseModel
 from .utils import (
     clean_docstring,
     format_args,
@@ -22,9 +22,9 @@ from .utils import (
     format_func_body_result,
     format_return_type_instructions,
     output_parser,
-    render_template,
+    render_chat_messages,
 )
-
+from pprint import pprint
 
 load_dotenv()
 
@@ -32,7 +32,7 @@ load_dotenv()
 def ask(
     call: bool = True,
     return_prompt_only: bool = False,
-    model_name: str = "gpt-4-vision-preview",
+    model_name: str = "gpt-4o",
     max_tokens: int = 4096,
     image_quality: str = "high",
     chat_model_class: BaseChatModel = ChatOpenAI,
@@ -70,15 +70,12 @@ def ask(
                 context_dict = format_args(
                     func=func, func_args=args, context_dict=context_dict
                 )
-                formatted_prompt = render_template(context_dict, raw_template)
+                messages.extend(render_chat_messages(context_dict, raw_template))
 
             else:
-                formatted_prompt = " ".join(args)
+                messages.append(SystemMessage(content=[{"type": "text", "text": " ".join(args)}]))
 
-            messages.append(
-                SystemMessage(content=[{"type": "text", "text": formatted_prompt}])
-            )
-
+            pprint(messages)
             if image:
                 image_base64 = convert_image_to_base64(image)
                 messages.append(
@@ -112,7 +109,7 @@ def ask(
                 max_tokens=max_tokens,
                 **llm_kwargs,
             )
-            if return_type and issubclass(return_type, BaseAnswer):
+            if return_type and issubclass(return_type, BaseModel):
                 parser = output_parser(return_type)
                 retry_parser = RetryWithErrorOutputParser.from_llm(
                     llm=llm, parser=parser

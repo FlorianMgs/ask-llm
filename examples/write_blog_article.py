@@ -1,6 +1,8 @@
 import requests
 from functools import cached_property
-from ask_llm import ask, BaseModel
+from ask_llm import ask
+
+from pydantic import BaseModel
 
 
 class BlogArticle(BaseModel):

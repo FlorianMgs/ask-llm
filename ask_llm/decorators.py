@@ -1,4 +1,5 @@
 import os
+import json
 
 from copy import deepcopy
 from functools import wraps
@@ -14,7 +15,7 @@ from langchain.schema import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
 from .images import convert_image_to_base64
-from .schemas import BaseModel
+from pydantic import BaseModel
 from .utils import (
     clean_docstring,
     format_args,
@@ -24,7 +25,7 @@ from .utils import (
     output_parser,
     render_chat_messages,
 )
-from pprint import pprint
+
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ load_dotenv()
 def ask(
     call: bool = True,
     return_prompt_only: bool = False,
+    return_as_dict: bool = False,
     model_name: str = "gpt-4o",
     max_tokens: int = 4096,
     image_quality: str = "high",
@@ -75,7 +77,6 @@ def ask(
             else:
                 messages.append(SystemMessage(content=[{"type": "text", "text": " ".join(args)}]))
 
-            pprint(messages)
             if image:
                 image_base64 = convert_image_to_base64(image)
                 messages.append(
@@ -126,7 +127,7 @@ def ask(
                             prompt_value=x.get("prompt_value"),
                         )
                     )
-                    | RunnableLambda(lambda x: x.to_dict())
+                    | RunnableLambda(lambda x: json.loads(x.json()) if return_as_dict else x)
                 )
                 return main_chain.invoke({}) if call else main_chain
 

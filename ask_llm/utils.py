@@ -9,7 +9,7 @@ from jinja2 import Environment, BaseLoader
 from langchain.output_parsers import PydanticOutputParser
 from langchain.schema import SystemMessage, HumanMessage, AIMessage
 
-from .schemas import BaseModel
+from pydantic import BaseModel
 
 
 def preprocess_template(template_str):

@@ -3,8 +3,9 @@ import json
 
 from copy import deepcopy
 from functools import wraps
-from inspect import signature
-from typing import Callable
+from inspect import signature, isclass
+from pprint import pprint
+from typing import Any, Callable
 
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableLambda, RunnableParallel
@@ -32,6 +33,7 @@ load_dotenv()
 
 def ask(
     call: bool = True,
+    verbose: bool = False,
     return_prompt_only: bool = False,
     return_as_dict: bool = False,
     model_name: str = "gpt-4o",
@@ -50,6 +52,9 @@ def ask(
             docstring = func.__doc__
             messages = []
 
+            if verbose:
+                print("RETURN TYPE: ", return_type)
+
             if docstring:
                 raw_template = clean_docstring(docstring)
                 raw_template, context_dict = format_func_body_result(
@@ -59,7 +64,7 @@ def ask(
                 )
 
                 raw_template = format_return_type_instructions(
-                    schema=return_type, raw_template=raw_template
+                    return_type=return_type, raw_template=raw_template
                 )
 
                 raw_template, context_dict = format_attributes(
@@ -75,7 +80,9 @@ def ask(
                 messages.extend(render_chat_messages(context_dict, raw_template))
 
             else:
-                messages.append(SystemMessage(content=[{"type": "text", "text": " ".join(args)}]))
+                messages.append(
+                    SystemMessage(content=[{"type": "text", "text": " ".join(args)}])
+                )
 
             if image:
                 image_base64 = convert_image_to_base64(image)
@@ -92,6 +99,11 @@ def ask(
                         ]
                     )
                 )
+
+            if verbose:
+                print("FORMATTED PROMPT MESSAGES:")
+                for message in messages:
+                    pprint(message.dict())
 
             prompt = ChatPromptTemplate.from_messages(messages)
             if return_prompt_only:
@@ -110,7 +122,11 @@ def ask(
                 max_tokens=max_tokens,
                 **llm_kwargs,
             )
-            if return_type and issubclass(return_type, BaseModel):
+            if (
+                return_type
+                and isclass(return_type)
+                and issubclass(return_type, BaseModel)
+            ):
                 parser = output_parser(return_type)
                 retry_parser = RetryWithErrorOutputParser.from_llm(
                     llm=llm, parser=parser
@@ -127,11 +143,23 @@ def ask(
                             prompt_value=x.get("prompt_value"),
                         )
                     )
-                    | RunnableLambda(lambda x: json.loads(x.json()) if return_as_dict else x)
+                    | RunnableLambda(
+                        lambda x: json.loads(x.json()) if return_as_dict else x
+                    )
                 )
                 return main_chain.invoke({}) if call else main_chain
 
-            return (prompt | llm).invoke({}).content if call else prompt | llm
+            elif (
+                return_type
+                and not isclass(return_type)
+                and return_type != str
+                and return_type != Any
+                and return_type != None
+            ):
+                return eval((prompt | llm).invoke({}).content) if call else prompt | llm
+
+            else:
+                return (prompt | llm).invoke({}).content if call else prompt | llm
 
         return wrapper
 

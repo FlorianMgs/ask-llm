@@ -8,9 +8,10 @@ It works out of the box with OpenAI (by setting a `OPENAI_API_KEY` env var), but
 - Write your prompts in docstrings using Jinja templating language. 
 - Access your function args in your prompt.  
 - (Almost) full access in your prompt to every attributes / properties of objects as soon as it's not a callable.  
+- Conversation support
 - Fully compatible with Langchain / LCEL. Returns either the LLM response, the formatted `ChatPromptTemplate` or a chain `prompt | llm`.  
 - Access the decorated function return value inside your prompt. Use `{{ __result__ }}` anywhere in your prompt.  
-- Format the LLM answer using Pydantic objects as return type.  
+- Format the LLM answer using Pydantic objects as return type, or regular python return types.  
 - If passed a Pydantic object as return type, LLM will retry if it fails to answer on the first shot.  
 - If using GPT Vision, supports an `image` parameter to send alongside your prompt. You can input your image either as an url, a path, or a base64 string.  
 and many more to come...
@@ -126,9 +127,35 @@ description = describe_image(image="https://upload.wikimedia.org/wikipedia/commo
 ```
 Langsmith trace: https://smith.langchain.com/public/18f39957-93f5-47f2-a264-051c11cca2e8/r
 
+
+Conversation example:
+```python
+from ask_llm import ask
+
+
+@ask()
+def conversation(instruction: str) -> str:
+    """
+    {% chat %}
+        {% message system %}
+            You are an helpful assistant that can answer all the user questions.
+        {% endmessage %}
+        {% message ai %}
+            Hello, Arnaud! How can I help you today?
+        {% endmessage %}
+        {% message human %}
+            {{ instruction }}
+        {% endmessage %}
+    {% endchat %}
+    Answer in CAPS LOCK
+    """
+```
+
+
 ### Settings  
 You can pass numerous arguments to the decorator:  
 - `call: bool = True` To call the LLM or to return the prepared chain `prompt | llm`  
+- `verbose: bool = False` To enable verbose mode  
 - `return_prompt_only: bool = False` To return only the formatted `ChatPromptTemplate`  
 - `model_name: str = "gpt-4-vision-preview"` The model name  
 - `max_tokens: int = 4096` max tokens for the answer  

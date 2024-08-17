@@ -1,7 +1,7 @@
 import re
 
 from contextlib import suppress
-from inspect import getfullargspec
+from inspect import getfullargspec, isclass
 from textwrap import dedent
 from typing import Any, Callable, Iterable
 
@@ -14,11 +14,13 @@ from pydantic import BaseModel
 
 def preprocess_template(template_str):
     # Remove custom tags {% chat %} and {% endchat %}
-    template_str = re.sub(r'{%\s*chat\s*%}', '', template_str)
-    template_str = re.sub(r'{%\s*endchat\s*%}', '', template_str)
+    template_str = re.sub(r"{%\s*chat\s*%}", "", template_str)
+    template_str = re.sub(r"{%\s*endchat\s*%}", "", template_str)
     # Replace {% message 'role' %} and {% endmessage %} with placeholders
-    template_str = re.sub(r'{%\s*message\s*(\w+)\s*%}', r'<!-- message \1 -->', template_str)
-    template_str = re.sub(r'{%\s*endmessage\s*%}', r'<!-- endmessage -->', template_str)
+    template_str = re.sub(
+        r"{%\s*message\s*(\w+)\s*%}", r"<!-- message \1 -->", template_str
+    )
+    template_str = re.sub(r"{%\s*endmessage\s*%}", r"<!-- endmessage -->", template_str)
     return template_str
 
 
@@ -31,30 +33,34 @@ def render_chat_messages(context_dict: dict, raw_template: str) -> list:
     messages = []
 
     # Parse the text outside chat tags and add it as a HumanMessage
-    outside_chat_pattern = re.compile(r'(.*?)<!-- message', re.DOTALL)
+    outside_chat_pattern = re.compile(r"(.*?)<!-- message", re.DOTALL)
     outside_chat_match = outside_chat_pattern.match(rendered_template)
     if outside_chat_match:
         outside_text = outside_chat_match.group(1).strip()
         if outside_text:
-            messages.append(HumanMessage(content=[{"type": "text", "text": outside_text}]))
+            messages.append(
+                HumanMessage(content=[{"type": "text", "text": outside_text}])
+            )
 
     # Parse the rendered template to construct the list of message objects
-    message_pattern = re.compile(r'<!-- message (\w+) -->\s*(.*?)\s*<!-- endmessage -->', re.DOTALL)
+    message_pattern = re.compile(
+        r"<!-- message (\w+) -->\s*(.*?)\s*<!-- endmessage -->", re.DOTALL
+    )
     role_map = {
-        'system': 'SystemMessage',
-        'ai': 'AIMessage',
-        'human': 'HumanMessage',
+        "system": "SystemMessage",
+        "ai": "AIMessage",
+        "human": "HumanMessage",
     }
 
     for match in message_pattern.finditer(rendered_template):
         role, content = match.groups()
-        message_class = role_map.get(role, 'UnknownMessage')
+        message_class = role_map.get(role, "UnknownMessage")
         content = content.strip()
-        if message_class == 'SystemMessage':
+        if message_class == "SystemMessage":
             messages.append(SystemMessage(content=[{"type": "text", "text": content}]))
-        elif message_class == 'AIMessage':
+        elif message_class == "AIMessage":
             messages.append(AIMessage(content=[{"type": "text", "text": content}]))
-        elif message_class == 'HumanMessage':
+        elif message_class == "HumanMessage":
             messages.append(HumanMessage(content=[{"type": "text", "text": content}]))
         else:
             raise ValueError(f"Unknown role: {role}")
@@ -62,7 +68,9 @@ def render_chat_messages(context_dict: dict, raw_template: str) -> list:
     # Add remaining text outside chat tags as a HumanMessage
     remaining_text = message_pattern.split(rendered_template)[-1].strip()
     if remaining_text:
-        messages.append(HumanMessage(content=[{"type": "text", "text": remaining_text}]))
+        messages.append(
+            HumanMessage(content=[{"type": "text", "text": remaining_text}])
+        )
 
     return messages
 
@@ -125,12 +133,26 @@ def format_func_body_result(
     return raw_template, context_dict
 
 
-def format_return_type_instructions(schema: Any, raw_template: str) -> str:
+def format_return_type_instructions(return_type: Any, raw_template: str) -> str:
     """
     Returns the format instructions of a Pydantic schema.
     """
-    if schema and issubclass(schema, BaseModel):
-        raw_template += "\n\n" + output_parser(schema).get_format_instructions()
+    if return_type and isclass(return_type) and issubclass(return_type, BaseModel):
+        raw_template += "\n\n" + output_parser(return_type).get_format_instructions()
+    elif (
+        return_type
+        and not isclass(return_type)
+        and return_type != Any
+        and return_type != None
+        and return_type != str
+    ):
+        raw_template += (
+            "\n\n"
+            "Return the result as a string representing a perfectly exact python expression "
+            f"respecting this type annotation: {return_type}\n"
+            "Answer ONLY by the python expression, without any additional text. "
+            "Do not enclose your answer in markdown code blocks."
+        )
     return raw_template
 
 
@@ -160,5 +182,3 @@ def clean_docstring(docstring: str) -> str:
     docstring = re.sub(" +", " ", docstring)
     docstring = re.sub("\n+", "\n", docstring)
     return docstring
-
-

@@ -1,7 +1,7 @@
 from ask_llm import ask
 
 
-@ask(model_name="claude-3-5-sonnet-20240620")
+@ask(model_name="o1-mini")
 def conversation(instruction: str) -> str:
     """
     {% chat %}

@@ -53,7 +53,11 @@ def ask(
             docstring = func.__doc__
             messages = []
 
-            if model_name.startswith("claude"):
+            is_claude = model_name.startswith("claude")
+            is_o1 = model_name.startswith("o1")
+            bypass_system_msg = is_claude or is_o1
+
+            if is_claude:
                 chat_model_class = ChatAnthropic
                 api_key_from_llm_kwargs = llm_kwargs.get("anthropic_api_key", None)
                 llm_kwargs["anthropic_api_key"] = (
@@ -62,7 +66,7 @@ def ask(
                     or os.getenv("ANTHROPIC_API_KEY")
                 )
 
-            elif model_name.startswith("gpt") or model_name.startswith("o1"):
+            elif model_name.startswith("gpt") or is_o1:
                 chat_model_class = ChatOpenAI
                 api_key_from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
                 llm_kwargs["openai_api_key"] = (
@@ -100,16 +104,12 @@ def ask(
                     render_chat_messages(
                         context_dict,
                         raw_template,
-                        is_anthropic=model_name.startswith("claude"),
+                        bypass_system=bypass_system_msg,
                     )
                 )
 
             else:
-                msg_class = (
-                    SystemMessage
-                    if not model_name.startswith("claude")
-                    else HumanMessage
-                )
+                msg_class = SystemMessage if not bypass_system_msg else HumanMessage
                 messages.append(
                     msg_class(content=[{"type": "text", "text": " ".join(args)}])
                 )
@@ -139,11 +139,16 @@ def ask(
             if return_prompt_only:
                 return prompt
 
-            llm = chat_model_class(
-                model_name=model_name,
-                max_tokens=max_tokens,
+            llm_model_class_kwargs = {
+                "model_name": model_name,
+                "max_tokens": max_tokens,
                 **llm_kwargs,
-            )
+            }
+            if is_o1:
+                llm_model_class_kwargs.pop("max_tokens")
+                llm_model_class_kwargs["temperature"] = 1
+
+            llm = chat_model_class(**llm_model_class_kwargs)
             if (
                 return_type
                 and isclass(return_type)

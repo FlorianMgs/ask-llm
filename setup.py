@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ask-llm",
-    version="0.1.16",
+    version="0.1.17",
     packages=find_packages(),
     url="https://github.com/FlorianMgs/ask-llm",
     license="MIT",

@@ -27,7 +27,7 @@ def preprocess_template(template_str):
 def render_chat_messages(
     context_dict: dict,
     raw_template: str,
-    is_anthropic: bool = False,  # Anthropic does not support SystemMessage
+    bypass_system: bool = False,  # Claude / o1 does not support SystemMessage
 ) -> list:
     environment = Environment(loader=BaseLoader())
     preprocessed_template = preprocess_template(raw_template)
@@ -51,7 +51,7 @@ def render_chat_messages(
         r"<!-- message (\w+) -->\s*(.*?)\s*<!-- endmessage -->", re.DOTALL
     )
     role_map = {
-        "system": "SystemMessage" if not is_anthropic else "HumanMessage",
+        "system": "SystemMessage" if not bypass_system else "HumanMessage",
         "ai": "AIMessage",
         "human": "HumanMessage",
     }

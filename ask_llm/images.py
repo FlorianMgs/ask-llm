@@ -21,6 +21,10 @@ def is_url(s):
     return s.startswith("http://") or s.startswith("https://")
 
 
+def is_filepath(s):
+    return os.path.isfile(s)
+
+
 def image_to_b64(image: Image.Image, image_format: str | None = None) -> str:
     image_io = BytesIO()
     image_format = image_format.upper() if image_format else "WEBP"
@@ -47,7 +51,7 @@ def convert_image_to_base64(input_image: str | Image.Image) -> str:
             pil_image = download_image_as_pil_image(input_image)
             b64 = image_to_b64(pil_image)
             return b64
-        elif os.path.isfile(input_image):
+        elif is_filepath(input_image):
             pil_image = Image.open(input_image)
             return image_to_b64(pil_image)
         else:

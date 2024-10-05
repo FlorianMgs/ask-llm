@@ -10,7 +10,6 @@ from typing import Any, Callable
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain.output_parsers import RetryWithErrorOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
@@ -23,7 +22,6 @@ from .utils import (
     format_attributes,
     format_func_body_result,
     format_return_type_instructions,
-    output_parser,
     render_chat_messages,
 )
 
@@ -154,25 +152,12 @@ def ask(
                 and isclass(return_type)
                 and issubclass(return_type, BaseModel)
             ):
-                parser = output_parser(return_type)
-                retry_parser = RetryWithErrorOutputParser.from_llm(
-                    llm=llm, parser=parser
-                )
                 completion_chain = prompt | llm
-                main_chain = (
-                    RunnableParallel(
-                        completion=completion_chain,
-                        prompt_value=prompt,
-                    )
-                    | RunnableLambda(
-                        lambda x: retry_parser.parse_with_prompt(
-                            completion=x.get("completion").content,
-                            prompt_value=x.get("prompt_value"),
-                        )
-                    )
-                    | RunnableLambda(
-                        lambda x: json.loads(x.json()) if return_as_dict else x
-                    )
+                main_chain = RunnableParallel(
+                    completion=completion_chain,
+                    prompt_value=prompt,
+                ) | RunnableLambda(
+                    lambda x: json.loads(x.json()) if return_as_dict else x
                 )
                 return main_chain.invoke({}) if call else main_chain
 

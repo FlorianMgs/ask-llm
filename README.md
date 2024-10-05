@@ -2,7 +2,7 @@
 ask-llm is a very simple yet powerful package that can turn anything into a LLM interaction.  
 You just need to decorate a function with `@ask()`, write a prompt into the docstring, give it a return type, and there you go, you got your LLM interaction.  
 This takes inspiration from the awesome langchain-decorators package.  
-It works out of the box with OpenAI (by setting a `OPENAI_API_KEY` env var), but is compatible with all `BaseChatModel` from Langchain.
+It works out of the box with OpenAI and Anthropic (by setting a `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var), but is compatible with all `BaseChatModel` from Langchain.
 
 ## Features
 - Write your prompts in docstrings using Jinja templating language. 

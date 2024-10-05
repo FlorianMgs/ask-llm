@@ -14,7 +14,7 @@ from langchain.output_parsers import RetryWithErrorOutputParser
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
-
+from langchain_anthropic import ChatAnthropic
 from .images import convert_image_to_base64
 from pydantic import BaseModel
 from .utils import (
@@ -43,6 +43,7 @@ def ask(
     **llm_kwargs,
 ):
     def decorator(func: Callable) -> Callable:
+
         @wraps(func)
         def wrapper(*args, **kwargs) -> Callable:
             api_key_from_kwargs = kwargs.pop("api_key", None)
@@ -51,6 +52,24 @@ def ask(
             return_type = signature(func).return_annotation
             docstring = func.__doc__
             messages = []
+
+            if model_name.startswith("claude"):
+                chat_model_class = ChatAnthropic
+                api_key_from_llm_kwargs = llm_kwargs.get("anthropic_api_key", None)
+                llm_kwargs["anthropic_api_key"] = (
+                    api_key_from_kwargs
+                    or api_key_from_llm_kwargs
+                    or os.getenv("ANTHROPIC_API_KEY")
+                )
+
+            elif model_name.startswith("gpt") or model_name.startswith("o1"):
+                chat_model_class = ChatOpenAI
+                api_key_from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
+                llm_kwargs["openai_api_key"] = (
+                    api_key_from_kwargs
+                    or api_key_from_llm_kwargs
+                    or os.getenv("OPENAI_API_KEY")
+                )
 
             if verbose:
                 print("RETURN TYPE: ", return_type)
@@ -77,11 +96,22 @@ def ask(
                 context_dict = format_args(
                     func=func, func_args=args, context_dict=context_dict
                 )
-                messages.extend(render_chat_messages(context_dict, raw_template))
+                messages.extend(
+                    render_chat_messages(
+                        context_dict,
+                        raw_template,
+                        is_anthropic=model_name.startswith("claude"),
+                    )
+                )
 
             else:
+                msg_class = (
+                    SystemMessage
+                    if not model_name.startswith("claude")
+                    else HumanMessage
+                )
                 messages.append(
-                    SystemMessage(content=[{"type": "text", "text": " ".join(args)}])
+                    msg_class(content=[{"type": "text", "text": " ".join(args)}])
                 )
 
             if image:
@@ -108,14 +138,6 @@ def ask(
             prompt = ChatPromptTemplate.from_messages(messages)
             if return_prompt_only:
                 return prompt
-
-            if issubclass(chat_model_class, ChatOpenAI):
-                api_key_from_llm_kwargs = llm_kwargs.get("openai_api_key", None)
-                llm_kwargs["openai_api_key"] = (
-                    api_key_from_kwargs
-                    or api_key_from_llm_kwargs
-                    or os.getenv("OPENAI_API_KEY")
-                )
 
             llm = chat_model_class(
                 model_name=model_name,

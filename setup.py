@@ -15,7 +15,7 @@ setup(
         "langchain>=0.3.2",
         "langchain-community>=0.3.1",
         "langchain-core>=0.3.9",
-        "langchain-openai>=0.2.2",
+        "langchain-openai>=0.2.0",
         "langchain-anthropic>=0.2.3",
         "python-dotenv>=1.0.1",
     ],

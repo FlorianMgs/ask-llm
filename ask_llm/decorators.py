@@ -54,7 +54,7 @@ def ask(
             messages = []
 
             is_claude = model_name.startswith("claude")
-            is_o1 = model_name.startswith("o1")
+            is_o1 = model_name.startswith("o")
             bypass_system_msg = is_claude or is_o1
 
             if is_claude:
